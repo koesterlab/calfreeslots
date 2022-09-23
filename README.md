@@ -1,5 +1,5 @@
 # calfreeslots
-A small command line utility for printing free calendar slots in the coming days.
+A small command line utility for printing free calendar slots in the coming days, either for personal use or for pasting into mails or chat platforms in order to let others know when you are available.
 
 ## Example output
 

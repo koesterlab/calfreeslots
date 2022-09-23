@@ -1,5 +1,32 @@
 # calfreeslots
-A small command line utility for printing free calendar slots in the coming days, either for personal use or for pasting into mails or chat platforms in order to let others know when you are available.
+
+A small command line utility for printing free calendar slots (by parsing iCal data) in the coming days, either for personal use or for pasting into mails or chat platforms in order to let others know when you are available.
+
+## Install
+
+Given that you have a Python installation, you can install calfreeslots via
+
+```bash
+pip install calfreeslots
+```
+
+## Configure
+
+Calfreeslots is configured via environment variables.
+Put the following into your shell profile (e.g. `.bashrc` or `.zshrc`):
+
+```bash
+export CALFREESLOTS_ICAL_URLS="..." # Here, add ical urls, separated by commas.
+export CALFREESLOTS_MORNING_START="9:30" # Start time in the morning.
+export CALFREESLOTS_EVENING_END="17:00" # End time in the evening.
+export CALFREESLOTS_SHRINK_SLOTS_MIN="5" # Minutes to shring free slots, in order to generate some free time between events.
+```
+
+For example, you can get iCal URLs for any of your google calendars by the following procedure:
+
+1. Go to settings (gear icon at the top right).
+2. Choose calendar in the left panel.
+3. Scroll down to "Integrate calendar" and copy the "Secret address in iCal format".
 
 ## Example output
 

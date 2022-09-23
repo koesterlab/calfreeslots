@@ -30,7 +30,7 @@ def cli():
 
 def main():
     args = cli()
-    urls = os.environ["SLOTH_ICAL_URLS"].split(",")
+    urls = os.environ["CALFREESLOTS_ICAL_URLS"].split(",")
     timezone = time.tzname[-1]
 
     # get the Friday after the next
@@ -39,7 +39,9 @@ def main():
     end_date = arrow.now() + datetime.timedelta(days=days_to_go)
 
     free_slots = {
-        day.date(): Day(day) for day in arrow.Arrow.range("day", arrow.now(), end_date)
+        day.date(): Day(day)
+        for day in arrow.Arrow.range("day", arrow.now(), end_date)
+        if day.weekday() not in (5, 6)
     }
 
     for url in urls:
@@ -51,9 +53,15 @@ def main():
             begin = arrow.get(event["DTSTART"].dt).to(timezone)
             end = arrow.get(event["DTEND"].dt).to(timezone)
 
-            free_slots[begin.date()].add_event(Event(begin, end))
+            try:
+                free_slots[begin.date()].add_event(Event(begin, end))
+            except KeyError:
+                # day is not considered (e.g. weekend)
+                pass
+
     for day in free_slots.values():
-        day.shrink_slots()
+        day.process()
+
     free_slots = sorted(free_slots.values(), key=lambda x: x.day)
     print(*free_slots, sep="\n")
 
@@ -73,7 +81,7 @@ class Slot:
         return self.begin == self.end
 
     def shrink(self):
-        delta = int(os.environ.get("SLOTH_SHRINK_SLOTS_MIN", "5"))
+        delta = int(os.environ.get("CALFREESLOTS_SHRINK_SLOTS_MIN", "5"))
         if self.begin > self.day.morning_start:
             self.begin += datetime.timedelta(minutes=delta)
         if self.end < self.day.evening_end:
@@ -91,10 +99,10 @@ class Slot:
 class Day:
     def __init__(self, day):
         self.morning_start = parse_hour_min(
-            day, os.environ.get("SLOTH_MORNING_START", "9:00")
+            day, os.environ.get("CALFREESLOTS_MORNING_START", "9:00")
         )
         self.evening_end = parse_hour_min(
-            day, os.environ.get("SLOTH_EVENING_END", "17:00")
+            day, os.environ.get("CALFREESLOTS_EVENING_END", "17:00")
         )
         self.slots = [Slot(self)]
 
@@ -102,9 +110,13 @@ class Day:
     def day(self):
         return self.slots[0].begin
 
-    def shrink_slots(self):
+    def process(self):
         for slot in self.slots:
             slot.shrink()
+        self.cleanup()
+
+    def cleanup(self):
+        self.slots = [slot for slot in self.slots if not slot.is_empty()]
 
     def add_event(self, event):
         for slot in list(self.slots):
@@ -132,12 +144,9 @@ class Day:
                     else:
                         # case 6: event overlaps the beginning of the slot
                         slot.begin = event.end
-        self.slots = [slot for slot in self.slots if not slot.is_empty()]
+        self.cleanup()
 
     def __str__(self):
         day_name = calendar.day_name[self.day.weekday()]
         sep = "\n    "
         return f"{day_name}, {self.day.date()}:\n    {sep.join(map(str, sorted(self.slots)))}"
-
-
-main()

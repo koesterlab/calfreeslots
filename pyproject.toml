@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "calfreeslots"
-version = "1.0.0"
+version = "1.0.1"
 description = "Command line utility to print free calendar slots in the coming days."
 authors = ["Johannes Köster <johannes.koester@uni-due.de>"]
 license = "MIT"

@@ -62,13 +62,28 @@ def main():
     for day in free_slots.values():
         day.process()
 
-    free_slots = sorted(free_slots.values(), key=lambda x: x.day)
+    free_slots = sorted(
+        (day for day in free_slots.values() if not day.is_empty()), key=lambda x: x.day
+    )
     print(*free_slots, sep="\n")
 
 
-def parse_hour_min(day, hour_min):
-    hour, minute = hour_min.split(":")
-    return day.replace(hour=int(hour), minute=int(minute), second=0, microsecond=0)
+def split_hour_min(hour_min):
+    try:
+        hour, minute = hour_min.split(":")
+        return int(hour), int(minute)
+    except Exception as e:
+        raise ValueError(f"Invalid hour:minute format: {hour_min}") from e
+
+
+def parse_hour_min_time(day, hour_min):
+    hour, minute = split_hour_min(hour_min)
+    return day.replace(hour=hour, minute=minute, second=0, microsecond=0)
+
+
+def parse_hour_min_delta(hour_min):
+    hour, minute = split_hour_min(hour_min)
+    return datetime.timedelta(hours=hour, minutes=minute)
 
 
 class Slot:
@@ -77,8 +92,11 @@ class Slot:
         self.end = end or day.evening_end
         self.day = day
 
-    def is_empty(self):
-        return self.begin == self.end
+    def is_too_short(self):
+        return (self.begin == self.end) or (
+            (self.end - self.begin)
+            < parse_hour_min_delta(os.environ.get("CALFREESLOTS_MIN_SLOT_LEN", "1:00"))
+        )
 
     def shrink(self):
         delta = int(os.environ.get("CALFREESLOTS_SHRINK_SLOTS_MIN", "5"))
@@ -98,17 +116,17 @@ class Slot:
 
 class Day:
     def __init__(self, day):
-        self.morning_start = parse_hour_min(
+        self.morning_start = parse_hour_min_time(
             day, os.environ.get("CALFREESLOTS_MORNING_START", "9:00")
         )
-        self.evening_end = parse_hour_min(
+        self.evening_end = parse_hour_min_time(
             day, os.environ.get("CALFREESLOTS_EVENING_END", "17:00")
         )
         self.slots = [Slot(self)]
+        self.day = day
 
-    @property
-    def day(self):
-        return self.slots[0].begin
+    def is_empty(self):
+        return not self.slots
 
     def process(self):
         for slot in self.slots:
@@ -116,7 +134,7 @@ class Day:
         self.cleanup()
 
     def cleanup(self):
-        self.slots = [slot for slot in self.slots if not slot.is_empty()]
+        self.slots = [slot for slot in self.slots if not slot.is_too_short()]
 
     def add_event(self, event):
         for slot in list(self.slots):

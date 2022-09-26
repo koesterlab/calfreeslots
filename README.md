@@ -20,6 +20,7 @@ export CALFREESLOTS_ICAL_URLS="..." # Here, add ical urls, separated by commas.
 export CALFREESLOTS_MORNING_START="9:30" # Start time in the morning.
 export CALFREESLOTS_EVENING_END="17:00" # End time in the evening.
 export CALFREESLOTS_SHRINK_SLOTS_MIN="5" # Minutes to shring free slots, in order to generate some free time between events.
+export CALFREESLOTS_MIN_SLOT_LEN="1:00" # Minimum length of slot (in hh:mm) in order to be displayed
 ```
 
 For example, you can get iCal URLs for any of your google calendars by the following procedure:

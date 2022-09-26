@@ -3,7 +3,6 @@ from collections import defaultdict, namedtuple
 import os
 import time
 import calendar
-from ics import Calendar
 import requests
 import datetime
 import arrow
